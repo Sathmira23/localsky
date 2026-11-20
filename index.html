@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LocalSky Sri Lanka</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Noto+Sans+Sinhala:wght@400;600&family=Noto+Sans+Tamil:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#2f6fc4"><link rel="icon" href="logo.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#fff;--card:rgba(255,255,255,.95);--ink:#071d5c;--mute:#33487f;--line:rgba(7,29,92,.22);--acc:#0a47e0;--accink:#fff;--warn:#a34608}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font-family:"Bricolage Grotesque","Noto Sans Sinhala","Noto Sans Tamil",system-ui,-apple-system,"Segoe UI",sans-serif;background:#1f6fe0;color:var(--ink);line-height:1.45}
+nav{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px max(20px,calc((100% - 880px)/2));background:color-mix(in srgb,var(--bg) 85%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{font-weight:800;font-size:1.25rem;letter-spacing:-.03em;color:var(--ink);text-decoration:none}
+.links{display:flex;gap:4px}
+.links a{padding:8px 14px;border-radius:999px;color:var(--mute);text-decoration:none;font-weight:600;font-size:.95rem}
+.links a.on{background:var(--ink);color:var(--bg)}
+.links i{display:none;font-style:normal}
+main{max-width:880px;margin:0 auto;padding:20px 20px 48px}
+h1{font-size:1.9rem;letter-spacing:-.03em;margin:8px 0 4px}
+h2{font-size:1.05rem;margin:22px 0 10px}
+.sub{color:var(--mute);margin:0 0 16px}
+input,textarea{width:100%;font:inherit;color:inherit;padding:12px 16px;border-radius:12px;border:1px solid var(--line);background:var(--card);margin:6px 0}
+textarea{min-height:90px;resize:vertical}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.btn{font:inherit;font-weight:600;padding:12px 22px;border-radius:999px;border:0;background:var(--acc);color:var(--accink);cursor:pointer}
+.btn.ghost,.pill{background:transparent;color:inherit;border:1px solid var(--line)}
+.pill{font:inherit;font-size:.85rem;padding:4px 12px;border-radius:999px;cursor:pointer;color:#fff;border-color:rgba(255,255,255,.5)}
+.search{display:flex;gap:8px}.search input{margin:0}
+#sug{list-style:none;margin:8px 0 0;padding:0;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+#sug button{width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:12px 16px;cursor:pointer}
+#sug li+li{border-top:1px solid var(--line)}
+.hero{position:relative;overflow:hidden;margin-top:16px;padding:26px;border-radius:28px;color:#fff;background:linear-gradient(165deg,var(--a),var(--b));box-shadow:0 22px 40px -22px var(--b)}
+.hero[data-sky=clear]{--a:#e8912d;--b:#2f6fc4}.hero[data-sky=cloud]{--a:#7f95a3;--b:#4d6372}
+.hero[data-sky=rain]{--a:#5d7f94;--b:#25404f}.hero[data-sky=storm]{--a:#4b4f6d;--b:#181b2d}.hero[data-sky=night]{--a:#1c2b4c;--b:#0a1120}
+.hero .top{display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.temp{font-size:clamp(5.5rem,24vw,8.5rem);font-weight:300;line-height:1;letter-spacing:-.05em;margin:18px 0 4px}
+.cond{font-size:1.4rem}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px}
+@media(max-width:420px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stats div{background:rgba(255,255,255,.14);backdrop-filter:blur(6px);border-radius:14px;padding:10px 12px;font-size:.8rem}.stats b{display:block;font-size:1.05rem}
+.cols{display:grid;grid-template-columns:1.2fr 1fr;gap:28px}
+@media(max-width:760px){.cols{grid-template-columns:1fr}}
+.day{display:grid;grid-template-columns:62px 28px 42px 1fr auto;gap:8px;align-items:center;padding:11px 0;border-top:1px solid var(--line);font-size:.95rem}
+.rp{color:var(--mute);font-size:.8rem}.tt{font-variant-numeric:tabular-nums;white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:var(--line);position:relative}
+.bar i{position:absolute;top:0;bottom:0;border-radius:3px;background:linear-gradient(90deg,#4aa3c7,#e8912d)}
+.rc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--cc,var(--line));border-radius:14px;padding:14px;margin:0 0 10px}
+.rc p{margin:6px 0}.rh{display:flex;justify-content:space-between;gap:8px}
+.meta{font-size:.82rem;color:var(--mute);display:flex;justify-content:space-between;align-items:center}
+.meta button{font:inherit;font-size:.8rem;border:0;background:none;color:var(--warn);cursor:pointer}
+.banner{border-radius:14px;padding:12px 14px;background:var(--card);border-left:4px solid var(--acc);margin-bottom:12px}
+.banner.diff{border-left-color:var(--warn)}
+.banner small{display:block;color:var(--mute)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+.chip input{position:absolute;opacity:0;width:0}
+.chip span{display:inline-block;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer}
+.chip input:checked+span{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip input:focus-visible+span{outline:2px solid var(--acc);outline-offset:2px}
+.panel{max-width:420px}
+.quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.quick button{font:inherit;font-size:.85rem;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.empty{color:var(--mute);padding:12px 0}
+.brand{display:flex;align-items:center;gap:10px}.brand img{border-radius:50%}
+.search input{border-radius:999px;padding-left:20px}
+.quick button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none}
+.hero>*{position:relative}
+.hero .top span{font-size:1.1rem}
+.hero[data-sky=clear]::before{background:radial-gradient(circle at 88% 6%,rgba(255,236,180,.85),transparent 42%);animation:glow 5s ease-in-out infinite alternate}
+.hero[data-sky=cloud]::before{background:radial-gradient(ellipse at 15% 25%,rgba(255,255,255,.28),transparent 50%),radial-gradient(ellipse at 85% 60%,rgba(255,255,255,.2),transparent 45%);animation:glow 7s ease-in-out infinite alternate}
+.hero[data-sky=rain]::before,.hero[data-sky=storm]::before{background:radial-gradient(1px 12px at 30% 40%,rgba(255,255,255,.5),transparent),radial-gradient(1px 10px at 75% 85%,rgba(255,255,255,.4),transparent);background-size:40px 80px;animation:rain .6s linear infinite}
+.hero[data-sky=night]::before{background:radial-gradient(1.5px 1.5px at 12% 22%,#fff,transparent),radial-gradient(1.5px 1.5px at 70% 15%,#fff,transparent),radial-gradient(2px 2px at 88% 40%,#fff,transparent),radial-gradient(1.5px 1.5px at 40% 8%,#fff,transparent),radial-gradient(1px 1px at 55% 35%,#fff,transparent),radial-gradient(1.5px 1.5px at 25% 50%,#fff,transparent);animation:glow 3s ease-in-out infinite alternate}
+@keyframes glow{from{opacity:.5}to{opacity:1}}
+@keyframes rain{to{background-position:0 80px,0 80px}}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+#view>*{animation:in .35s ease both}
+.hours{display:flex;gap:10px;overflow-x:auto;padding:2px 0 12px;scroll-snap-type:x proximity}
+.hr{flex:0 0 66px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:10px 4px;font-size:.85rem;scroll-snap-align:start}
+.hr b{display:block;font-size:1rem;margin:4px 0 2px}.hr small{display:block;color:var(--mute);min-height:1.2em}
+.hr.now{background:var(--ink);color:var(--bg);border-color:var(--ink)}.hr.now small{color:inherit;opacity:.8}
+.by{display:flex;align-items:center;gap:8px}
+.av{width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--accink);font-style:normal;font-weight:700;font-size:.75rem;display:grid;place-items:center}
+.rc[data-c=clear]{--cc:#e8912d}.rc[data-c=cloud]{--cc:#7f95a3}.rc[data-c=rain]{--cc:#4aa3c7}.rc[data-c=storm]{--cc:#6b5bd6}.rc[data-c=fog]{--cc:#9aa8b2}.rc[data-c=wind]{--cc:#3fb7a4}.rc[data-c=flood]{--cc:#d64545}.rc[data-c=landslide]{--cc:#8a5a2b}
+#lang{width:auto;margin:0;padding:6px 10px;border-radius:999px}
+.meta .cf{border:1px solid var(--line);color:var(--mute);border-radius:999px;padding:4px 10px;margin-right:6px}
+.meta .cf.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+#map{height:62vh;min-height:360px;border-radius:22px;border:1px solid var(--line);isolation:isolate}
+.mk{display:grid;place-items:center;font-size:20px;background:var(--card);border:2px solid var(--line);border-radius:50%}
+.mk.al{border-color:#d64545;box-shadow:0 0 0 4px rgba(214,69,69,.25)}
+body{overflow-x:hidden}
+.auth{display:flex;flex-direction:column;align-items:center;gap:18px;padding:6px 0 24px}
+.authlogo{width:128px;height:128px;border-radius:50%;box-shadow:0 14px 30px -10px rgba(5,30,100,.6)}
+.glass{width:100%;max-width:440px;padding:26px 24px;border-radius:32px;background:rgba(222,236,255,.84);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.75);box-shadow:0 24px 50px -20px rgba(8,30,100,.55);color:#0b2a7a}
+.glass h1{text-align:center;font-size:1.7rem;margin:0 0 4px;color:#0b2a7a}
+.glass .sub{text-align:center;color:#1b3c8c;margin-bottom:14px}
+.fld{display:flex;align-items:center;gap:12px;background:#fff;border-radius:999px;padding:0 16px;margin:10px 0;box-shadow:0 4px 12px -6px rgba(10,40,120,.4);color:#0b2a7a}
+.fld:focus-within{outline:2px solid #0a47e0}
+.fld svg{width:22px;height:22px;flex:none}
+.fld input{border:0;background:none;margin:0;padding:14px 0;color:#0b2a7a;border-radius:0;outline:none;min-width:0}
+.fld input::placeholder{color:#6b7fb0}
+.eye{border:0;background:none;cursor:pointer;font-size:1.1rem;padding:4px}
+.go{background:linear-gradient(180deg,#1a6bff,#0a47e0);color:#fff;margin-top:6px;padding:14px}
+.glass .or{color:#1b3c8c}
+.glass .btn.ghost{background:#fff;color:#0b2a7a;border:0;display:flex;align-items:center;justify-content:center;gap:10px}
+.glass .btn.ghost svg{width:20px;height:20px}
+.alt{display:flex;justify-content:space-between;gap:12px;margin-top:14px;font-size:.92rem}
+.alt a{color:#0a47e0;font-weight:600;text-decoration:none}
+.glass .meter{margin:6px 8px}
+.seg{display:flex;background:var(--line);border-radius:999px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;font:inherit;font-weight:600;border:0;border-radius:999px;padding:8px;background:none;color:var(--mute);cursor:pointer}
+.seg .on{background:var(--card);color:var(--ink)}
+.wide{width:100%}.or{text-align:center;color:var(--mute);margin:8px 0}
+.pw{position:relative}.pw button{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:0;background:none;cursor:pointer;font-size:1.1rem}
+.meter{height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-bottom:8px}.meter i{display:block;height:100%;width:0;transition:.2s}
+.phead{display:flex;align-items:center;gap:16px}
+.bigav{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:2rem;font-weight:800;color:#fff}
+.pstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.pstats div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;font-size:.8rem;color:var(--mute)}.pstats b{display:block;font-size:1.05rem;color:var(--ink)}
+#toast{position:fixed;left:50%;bottom:90px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media(max-width:640px){
+  nav{padding:12px 16px}
+  .links{position:fixed;left:0;right:0;bottom:0;justify-content:space-around;background:var(--card);border-top:1px solid var(--line);padding:8px 8px max(8px,env(safe-area-inset-bottom));z-index:6}
+  .links a{display:flex;flex-direction:column;align-items:center;font-size:.72rem;padding:6px 12px;border-radius:12px}
+  .links i{display:block;font-size:1.3rem}
+  main{padding-bottom:100px}
+}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}.hero::before,#view>*{animation:none}}
+/* ===== sky theme: all pages ===== */
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:#1f6fe0 url(sky-bg.jpg) center bottom/cover no-repeat}
+nav{background:rgba(255,255,255,.2);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.35)}
+.brand{color:#fff;text-shadow:0 1px 8px rgba(5,30,100,.5)}
+.links a{color:rgba(255,255,255,.94);text-shadow:0 1px 6px rgba(5,30,100,.35)}
+.links a.on{background:#fff;color:#0a47e0;text-shadow:none}
+#lang{background:rgba(255,255,255,.9);color:#0b2a7a;border:0}
+#view>h1,#view>h2,#view>.sub,#view>.empty,.phead h1,.phead .sub{color:#fff;text-shadow:0 1px 10px rgba(5,30,100,.5)}
+.btn{background:linear-gradient(180deg,#1a6bff,#0a47e0);color:#fff}
+.btn.ghost{background:rgba(255,255,255,.88);color:#0b2a7a;border:0}
+input,textarea{background:#fff;border-color:rgba(10,42,122,.14)}
+.cols{gap:20px}
+.cols section,.panel,.rc,.hr,.pstats div,.banner,.quick button{backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.cols section,.panel{background:var(--card);border:1px solid rgba(255,255,255,.75);border-radius:26px;padding:4px 18px 18px;box-shadow:0 18px 40px -24px rgba(8,30,100,.6)}
+.panel{padding:24px}
+.quick button.on{background:#0a47e0;color:#fff;border-color:#0a47e0}
+#map{border:2px solid rgba(255,255,255,.85)}
+.foot{display:flex;align-items:center;justify-content:center;gap:10px;color:#fff;font-style:italic;padding:0 16px 28px;text-shadow:0 1px 8px rgba(5,30,100,.5)}
+.foot img{border-radius:50%}
+@media(max-width:640px){main{padding-bottom:24px}.foot{padding-bottom:100px}.links a{color:#0b2a7a;text-shadow:none}.links a.on{background:#0a47e0;color:#fff}}
+/* ===== better contrast ===== */
+body::before{background:linear-gradient(rgba(6,28,105,.34),rgba(6,28,105,.14)),url(sky-bg.jpg) center bottom/cover no-repeat #1f6fe0}
+nav{background:rgba(8,35,120,.58);border-bottom:1px solid rgba(255,255,255,.28)}
+#view>h1{text-shadow:0 2px 4px rgba(5,25,90,.75),0 0 20px rgba(5,25,90,.6)}
+#view>h2{display:inline-block;background:rgba(8,35,120,.6);padding:6px 16px;border-radius:999px;font-weight:600;text-shadow:none}
+#view>.sub,.phead .sub{display:inline-block;background:rgba(8,35,120,.5);padding:6px 14px;border-radius:14px;text-shadow:none}
+.phead h1{text-shadow:0 2px 4px rgba(5,25,90,.75),0 0 20px rgba(5,25,90,.6)}
+.hero{text-shadow:0 1px 10px rgba(0,0,0,.28)}
+.stats div{background:rgba(6,28,105,.34);border:1px solid rgba(255,255,255,.22)}
+.rc,.hr,.banner,.pstats div{border:1px solid rgba(7,29,92,.18);box-shadow:0 10px 24px -16px rgba(5,25,90,.55)}
+.rc p,.day,.rh{color:var(--ink)}
+.bar{background:rgba(7,29,92,.16)}
+.quick button{background:rgba(255,255,255,.95);border-color:rgba(7,29,92,.2);font-weight:600}
+.cols section,.panel{background:var(--card);border:1px solid rgba(7,29,92,.16)}
+.glass{background:rgba(236,244,255,.95)}
+.glass .sub{background:none;color:#1b3c8c}
+.fld input::placeholder{color:#4a5e98}
+.foot{background:rgba(8,35,120,.5);width:fit-content;margin:0 auto 28px;padding:8px 18px;border-radius:999px}
+@media(max-width:640px){.links{background:rgba(255,255,255,.97)}.foot{margin-bottom:100px;padding-bottom:8px}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="brand" href="#home"><img src="logo.png" alt="" width="36" height="36">LocalSky LK</a>
+  <div class="links" id="links">
+    <a href="#home" data-r="home"><i>🏠</i>Home</a>
+    <a href="#community" data-r="community"><i>💬</i>Community</a>
+    <a href="#map" data-r="map"><i>🗺️</i>Map</a>
+    <a href="#report" data-r="report"><i>➕</i>Report</a>
+    <a href="#account" data-r="account"><i>👤</i>Account</a>
+  </div>
+  <select id="lang" aria-label="Language"><option value="en">EN</option><option value="si">සිං</option><option value="ta">தமிழ்</option></select>
+</nav>
+<main id="view"></main>
+<footer class="foot"><img src="logo.png" alt="" width="28" height="28"><span>Stay Informed. Stay Prepared.</span></footer>
+<div id="toast" role="status"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, query, orderBy, limit, onSnapshot, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAA4YOrV_RSxCHuGIlyYlFFVLoV4xPOowY",
+  authDomain: "weather-app-6f3e3.firebaseapp.com",
+  projectId: "weather-app-6f3e3",
+  appId: "1:783616696342:web:424d14f00441203cfc5537"
+});
+const auth = getAuth(app), db = getFirestore(app);
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ls = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+let tm; const toast = m => { const t = $("#toast"); t.textContent = m; t.classList.add("on"); clearTimeout(tm); tm = setTimeout(() => t.classList.remove("on"), 2800); };
+let lang = ls("lang") || "en";
+const CONDS = {
+  en: { clear:"☀️ Sunny", cloud:"⛅ Cloudy", rain:"🌧️ Raining", storm:"⛈️ Thunderstorm", fog:"🌫️ Foggy", wind:"💨 Windy", flood:"🌊 Flooding", landslide:"⛰️ Landslide" },
+  si: { clear:"☀️ අව්ව", cloud:"⛅ වළාකුළු", rain:"🌧️ වැස්ස", storm:"⛈️ ගිගුරුම්", fog:"🌫️ මීදුම", wind:"💨 සුළං", flood:"🌊 ගංවතුර", landslide:"⛰️ නායයෑම" },
+  ta: { clear:"☀️ வெயில்", cloud:"⛅ மேகமூட்டம்", rain:"🌧️ மழை", storm:"⛈️ இடி மின்னல்", fog:"🌫️ பனிமூட்டம்", wind:"💨 காற்று", flood:"🌊 வெள்ளம்", landslide:"⛰️ மண்சரிவு" }
+};
+const COND = {}; Object.assign(COND, CONDS[lang] || CONDS.en);
+const I18N = {
+  en: {home:"Home",community:"Community",map:"Map",report:"Report",account:"Account",title:"Sri Lanka weather",search_ph:"Search a town in Sri Lanka",search:"Search",feels:"Feels like",humidity:"Humidity",wind:"Wind",uv:"UV index",sunrise:"Sunrise",sunset:"Sunset",next24:"Next 24 hours",week:"7-day forecast",locals:"What locals say",add:"Add a report",comm_title:"Community reports",comm_sub:"What people across Sri Lanka are seeing right now.",filter:"Filter by town or district",post:"Post report",login:"Log in",signup:"Sign up",logout:"Log out",confirm:"I see this too",map_title:"Alert map",map_sub:"Reports from the last 24 hours. Red rings mean flood, landslide or storm.",google:"Continue with Google",or:"or",name:"Your name",forgot:"Forgot password?",pitch:"Real weather, reported by people across Sri Lanka.",reports:"Reports",confirms:"Confirmations",since:"Member since",edit_name:"Display name",save:"Save",saved:"Saved",mine:"My reports",none:"No reports yet.",add_title:"Add a report",welcome:"Welcome Back!",welcome_sub:"Sign in to your LocalSky LK account",create:"Create Your Account",create_sub:"Join LocalSky LK and stay ahead of the weather!",email:"Email",pass:"Password",confirm_pw:"Confirm password",no_acc:"Create Account",have_acc:"Already have an account?"},
+  si: {home:"මුල් පිටුව",community:"ප්‍රජාව",map:"සිතියම",report:"වාර්තා",account:"ගිණුම",title:"ශ්‍රී ලංකා කාලගුණය",search_ph:"ශ්‍රී ලංකාවේ නගරයක් සොයන්න",search:"සොයන්න",feels:"දැනෙන උෂ්ණත්වය",humidity:"ආර්ද්‍රතාව",wind:"සුළඟ",uv:"UV දර්ශකය",sunrise:"හිරු උදාව",sunset:"හිරු බැසීම",next24:"ඉදිරි පැය 24",week:"දින 7 අනාවැකිය",locals:"ප්‍රදේශවාසීන් කියන්නේ",add:"වාර්තාවක් එක් කරන්න",comm_title:"ප්‍රජා වාර්තා",comm_sub:"රට පුරා මිනිසුන් දැන් දකින දේ.",filter:"නගරය හෝ දිස්ත්‍රික්කය අනුව පෙරන්න",post:"පළ කරන්න",login:"ඇතුල් වන්න",signup:"ලියාපදිංචි වන්න",logout:"පිටවන්න",confirm:"මමත් දැක්කා",map_title:"අනතුරු සිතියම",map_sub:"පසුගිය පැය 24 වාර්තා. රතු වළල්ල යනු ගංවතුර, නායයෑම් හෝ කුණාටුවකි.",google:"Google සමඟ ඉදිරියට",or:"හෝ",name:"ඔබේ නම",forgot:"මුරපදය අමතකද?",pitch:"ශ්‍රී ලංකාව පුරා මිනිසුන් වාර්තා කරන සැබෑ කාලගුණය.",reports:"වාර්තා",confirms:"තහවුරු කිරීම්",since:"සාමාජිකත්වය",edit_name:"පෙන්වන නම",save:"සුරකින්න",saved:"සුරැකුණා",mine:"මගේ වාර්තා",none:"තවම වාර්තා නැත.",add_title:"වාර්තාවක් එක් කරන්න",welcome:"නැවත සාදරයෙන් පිළිගනිමු!",welcome_sub:"ඔබේ LocalSky LK ගිණුමට ඇතුල් වන්න",create:"ඔබේ ගිණුම සාදන්න",create_sub:"LocalSky LK හා එක්වී කාලගුණයට පෙර සූදානම් වන්න!",email:"විද්‍යුත් තැපෑල",pass:"මුරපදය",confirm_pw:"මුරපදය තහවුරු කරන්න",no_acc:"ගිණුමක් සාදන්න",have_acc:"දැනටමත් ගිණුමක් තිබේද?"},
+  ta: {home:"முகப்பு",community:"சமூகம்",map:"வரைபடம்",report:"அறிக்கை",account:"கணக்கு",title:"இலங்கை வானிலை",search_ph:"இலங்கையில் ஒரு நகரைத் தேடுங்கள்",search:"தேடு",feels:"உணர்வு வெப்பநிலை",humidity:"ஈரப்பதம்",wind:"காற்று",uv:"UV குறியீடு",sunrise:"சூரிய உதயம்",sunset:"சூரிய அஸ்தமனம்",next24:"அடுத்த 24 மணி நேரம்",week:"7 நாள் முன்னறிவிப்பு",locals:"உள்ளூர் மக்கள் சொல்வது",add:"அறிக்கை சேர்",comm_title:"சமூக அறிக்கைகள்",comm_sub:"நாடு முழுவதும் மக்கள் இப்போது காண்பது.",filter:"நகரம் அல்லது மாவட்டம் மூலம் வடிகட்டு",post:"பதிவிடு",login:"உள்நுழை",signup:"பதிவு செய்",logout:"வெளியேறு",confirm:"நானும் பார்த்தேன்",map_title:"எச்சரிக்கை வரைபடம்",map_sub:"கடந்த 24 மணி நேர அறிக்கைகள். சிவப்பு வளையம் வெள்ளம், மண்சரிவு அல்லது புயலைக் குறிக்கும்.",google:"Google மூலம் தொடரவும்",or:"அல்லது",name:"உங்கள் பெயர்",forgot:"கடவுச்சொல் மறந்துவிட்டதா?",pitch:"இலங்கை முழுவதும் மக்கள் தெரிவிக்கும் உண்மையான வானிலை.",reports:"அறிக்கைகள்",confirms:"உறுதிப்படுத்தல்கள்",since:"உறுப்பினர்",edit_name:"காட்சிப் பெயர்",save:"சேமி",saved:"சேமிக்கப்பட்டது",mine:"எனது அறிக்கைகள்",none:"இன்னும் அறிக்கைகள் இல்லை.",add_title:"அறிக்கை சேர்",welcome:"மீண்டும் வருக!",welcome_sub:"உங்கள் LocalSky LK கணக்கில் உள்நுழையுங்கள்",create:"உங்கள் கணக்கை உருவாக்குங்கள்",create_sub:"LocalSky LK-இல் இணைந்து வானிலையை முன்கூட்டியே அறியுங்கள்!",email:"மின்னஞ்சல்",pass:"கடவுச்சொல்",confirm_pw:"கடவுச்சொல்லை உறுதிப்படுத்துக",no_acc:"கணக்கை உருவாக்கு",have_acc:"ஏற்கனவே கணக்கு உள்ளதா?"}
+};
+const tr = k => (I18N[lang] || I18N.en)[k] ?? I18N.en[k] ?? k;
+const CAT = { flood: "rain", landslide: "rain" };
+
+// Sri Lanka: 25 districts + popular towns [name, lat, lon]
+const SL = [["Colombo",6.9271,79.8612],["Gampaha",7.0873,79.9925],["Kalutara",6.5854,79.9607],["Kandy",7.2906,80.6337],["Matale",7.4675,80.6234],["Nuwara Eliya",6.9497,80.7891],["Galle",6.0535,80.2210],["Matara",5.9549,80.5550],["Hambantota",6.1241,81.1185],["Jaffna",9.6615,80.0255],["Kilinochchi",9.3803,80.3770],["Mannar",8.9810,79.9044],["Vavuniya",8.7514,80.4971],["Mullaitivu",9.2671,80.8142],["Batticaloa",7.7310,81.6747],["Ampara",7.2975,81.6820],["Trincomalee",8.5874,81.2152],["Kurunegala",7.4818,80.3609],["Puttalam",8.0408,79.8394],["Anuradhapura",8.3114,80.4037],["Polonnaruwa",7.9403,81.0188],["Badulla",6.9934,81.0550],["Monaragala",6.8728,81.3507],["Ratnapura",6.6828,80.3992],["Kegalle",7.2513,80.3464],["Negombo",7.2008,79.8737],["Ella",6.8667,81.0466],["Dambulla",7.8731,80.6518],["Arugam Bay",6.8400,81.8350]];
+const QUICK = ["Colombo","Kandy","Galle","Jaffna","Nuwara Eliya","Trincomalee","Negombo","Ella"];
+const inSL = (la, lo) => la > 5.8 && la < 9.95 && lo > 79.4 && lo < 82.0;
+const nearest = (la, lo) => SL.map(([n, a, b]) => ({ n, d: (a - la) ** 2 + (b - lo) ** 2 })).sort((x, y) => x.d - y.d)[0];
+function season() {
+  const m = new Date().getMonth() + 1;
+  if (m >= 5 && m <= 9) return "Southwest monsoon season: heavy rain in the south-west, drier in the north and east.";
+  if (m === 12 || m <= 2) return "Northeast monsoon season: rain in the north and east, drier in the south-west.";
+  return "Inter-monsoon season: afternoon thunderstorms are common across the island.";
+}   // report type -> forecast category (compare karanna)
+
+// weather code -> [label, icon, category]
+function wx(c) {
+  if (c <= 1) return ["Clear", "☀️", "clear"];
+  if (c <= 3) return ["Cloudy", "⛅", "cloud"];
+  if (c <= 48) return ["Fog", "🌫️", "fog"];
+  if (c <= 67 || (c >= 80 && c <= 82)) return ["Rain", "🌧️", "rain"];
+  if (c >= 95) return ["Thunderstorm", "⛈️", "storm"];
+  return ["Showers", "🌦️", "rain"];
+}
+function ago(ts) {
+  if (!ts) return "just now";
+  const m = Math.floor((Date.now() - ts.toDate()) / 60000);
+  return m < 1 ? "just now" : m < 60 ? m + " min ago" : m < 1440 ? Math.floor(m / 60) + " h ago" : Math.floor(m / 1440) + " d ago";
+}
+
+const hm = s => { const h = +s.slice(11, 13); return (h % 12 || 12) + ":" + s.slice(14, 16) + (h < 12 ? " AM" : " PM"); };
+
+// ---------- state ----------
+let unit = ls("unit") || "C", user = null, wxData = null, reports = [], mode = "login";
+let place = JSON.parse(ls("place") || "null") || { lat: 6.9271, lon: 79.8612, name: "Colombo", country: "Sri Lanka" };
+if (!inSL(place.lat, place.lon)) place = { lat: 6.9271, lon: 79.8612, name: "Colombo", country: "Sri Lanka" };
+const T = c => Math.round(unit === "C" ? c : c * 9 / 5 + 32) + "°";
+
+// ---------- report card (home + community dekatama) ----------
+function card(r) {
+  const mine = user && user.uid === r.uid, cf = r.confirms || [], on = user && cf.includes(user.uid);
+  return `<article class="rc" data-c="${esc(r.condition)}">
+    <div class="rh"><b>${COND[r.condition] || esc(r.condition)}</b><span>${esc(r.city)}${r.temp != null ? " · " + T(r.temp) : ""}</span></div>
+    ${r.note ? `<p>${esc(r.note)}</p>` : ""}
+    <div class="meta"><span class="by"><i class="av">${esc((r.author || "?")[0].toUpperCase())}</i>${esc(r.author)} · ${ago(r.createdAt)}</span>
+      <span><button class="cf ${on ? "on" : ""}" data-cf="${r.id}">👍 ${tr("confirm")}${cf.length ? " · " + cf.length : ""}</button>${mine ? `<button data-del="${r.id}" aria-label="Delete">✕</button>` : ""}</span></div>
+  </article>`;
+}
+
+// ---------- PAGE 1: Home (forecast + community) ----------
+function home() {
+  $("#view").innerHTML = `
+    <h1>${tr("title")}</h1><p class="sub">${season()}</p>
+    <form class="search" id="sf" autocomplete="off">
+      <input id="q" type="search" placeholder="${tr("search_ph")}" aria-label="Town">
+      <button class="btn">${tr("search")}</button>
+      <button class="btn ghost" type="button" id="gps" title="Use my location" aria-label="Use my location">◎</button>
+    </form>
+    <ul id="sug" hidden></ul>
+    <div class="quick" id="quick">${QUICK.map(n => `<button type="button" data-c="${n}">${n}</button>`).join("")}</div>
+    <div id="wx"></div>
+    <h2>${tr("next24")}</h2><div class="hours" id="hr"></div>
+    <div class="cols">
+      <section><h2>${tr("week")}</h2><div id="fc"></div></section>
+      <section><h2>${tr("locals")}</h2><div id="comm"></div></section>
+    </div>`;
+  $("#sf").onsubmit = searchCity;
+  $("#quick").onclick = e => {
+    const b = e.target.closest("[data-c]"); if (!b) return;
+    const [n, a, o] = SL.find(x => x[0] === b.dataset.c);
+    setPlace({ lat: a, lon: o, name: n, country: "Sri Lanka" });
+  };
+  $("#gps").onclick = () => navigator.geolocation
+    ? navigator.geolocation.getCurrentPosition(
+        p => {
+          const la = p.coords.latitude, lo = p.coords.longitude;
+          if (!inSL(la, lo)) return toast("LocalSky covers Sri Lanka only.");
+          setPlace({ lat: la, lon: lo, name: nearest(la, lo).n, country: "Sri Lanka" });
+        },
+        () => toast("Location blocked. Search a city instead."))
+    : toast("Location is not supported here.");
+  wxData ? (drawWx(), drawComm()) : loadWeather();
+}
+
+async function searchCity(e) {
+  e.preventDefault();
+  const q = $("#q").value.trim(); if (!q) return;
+  try {
+    const j = await (await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&countryCode=LK`)).json();
+    const ul = $("#sug"); ul.hidden = false;
+    if (!j.results) { ul.innerHTML = '<li><button disabled>No place found in Sri Lanka. Check the spelling.</button></li>'; return; }
+    ul.innerHTML = j.results.map((p, i) => `<li><button type="button" data-i="${i}">${esc(p.name)}${p.admin1 ? ", " + esc(p.admin1) : ""}, ${esc(p.country || "")}</button></li>`).join("");
+    ul.onclick = ev => {
+      const b = ev.target.closest("[data-i]"); if (!b) return;
+      const p = j.results[b.dataset.i]; ul.hidden = true;
+      setPlace({ lat: p.latitude, lon: p.longitude, name: p.name, country: p.country || "" });
+    };
+  } catch (err) { toast("Search failed. Check your internet."); }
+}
+
+function setPlace(p) { place = p; ls("place", JSON.stringify(p)); wxData = null; loadWeather(); }
+
+async function loadWeather() {
+  const box = $("#wx"); if (!box) return;
+  box.innerHTML = '<section class="hero" data-sky="cloud"><div class="top">Loading weather…</div><div class="temp">–</div></section>';
+  try {
+    const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${place.lat}&longitude=${place.lon}` +
+      `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day` +
+      `&hourly=temperature_2m,weather_code,precipitation_probability&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max&timezone=auto`);
+    if (!r.ok) throw 0;
+    wxData = await r.json(); drawWx(); drawComm();
+  } catch (e) { box.innerHTML = '<p class="empty">Could not load the forecast. Check your internet and try again.</p>'; }
+}
+
+function drawWx() {
+  const box = $("#wx"); if (!box || !wxData) return;
+  const c = wxData.current, [lab, ic, cat] = wx(c.weather_code);
+  const sky = !c.is_day ? "night" : cat === "fog" ? "cloud" : cat;
+  const dd = wxData.daily, uv = Math.round(dd.uv_index_max[0]), uvl = uv < 3 ? "Low" : uv < 6 ? "Moderate" : uv < 8 ? "High" : uv < 11 ? "Very high" : "Extreme";
+  box.innerHTML = `<section class="hero" data-sky="${sky}">
+    <div class="top"><span>${esc(place.name)}${place.country ? ", " + esc(place.country) : ""}</span><button class="pill" id="unit">Switch to °${unit === "C" ? "F" : "C"}</button></div>
+    <div class="temp">${T(c.temperature_2m)}</div><div class="cond">${COND[cat] || lab}</div>
+    <div class="stats"><div><b>${T(c.apparent_temperature)}</b>${tr("feels")}</div><div><b>${c.relative_humidity_2m}%</b>${tr("humidity")}</div><div><b>${Math.round(c.wind_speed_10m)} km/h</b>${tr("wind")}</div><div><b>${uv} · ${uvl}</b>${tr("uv")}</div><div><b>${hm(dd.sunrise[0])}</b>${tr("sunrise")}</div><div><b>${hm(dd.sunset[0])}</b>${tr("sunset")}</div></div>
+  </section>`;
+  $("#unit").onclick = () => { unit = unit === "C" ? "F" : "C"; ls("unit", unit); drawWx(); drawComm(); };
+
+  const d = wxData.daily, gmin = Math.min(...d.temperature_2m_min), gmax = Math.max(...d.temperature_2m_max), span = gmax - gmin || 1;
+  $("#fc").innerHTML = d.time.map((t, i) => {
+    const lbl = i === 0 ? "Today" : new Date(t + "T00:00").toLocaleDateString(lang, { weekday: "short", day: "numeric" });
+    const l = (d.temperature_2m_min[i] - gmin) / span * 100, w = Math.max(10, (d.temperature_2m_max[i] - d.temperature_2m_min[i]) / span * 100);
+    return `<div class="day"><span>${lbl}</span><span>${wx(d.weather_code[i])[1]}</span><span class="rp">${d.precipitation_probability_max[i] ?? 0}%</span>
+      <span class="bar"><i style="left:${l}%;width:${w}%"></i></span><span class="tt">${T(d.temperature_2m_min[i])} ${T(d.temperature_2m_max[i])}</span></div>`;
+  }).join("");
+  document.querySelectorAll("#quick button").forEach(b => b.classList.toggle("on", b.dataset.c === place.name));
+  const H = wxData.hourly, nowT = c.time.slice(0, 13) + ":00";
+  let st = H.time.findIndex(t => t >= nowT); if (st < 0) st = 0;
+  $("#hr").innerHTML = H.time.slice(st, st + 24).map((t, i) => {
+    const h = +t.slice(11, 13), k = st + i, pr = H.precipitation_probability[k];
+    return `<div class="hr ${i === 0 ? "now" : ""}"><span>${i === 0 ? "Now" : (h % 12 || 12) + (h < 12 ? " AM" : " PM")}</span><b>${T(H.temperature_2m[k])}</b><span>${wx(H.weather_code[k])[1]}</span><small>${pr >= 20 ? "💧" + pr + "%" : ""}</small></div>`;
+  }).join("");
+}
+
+// Forecast vs community reports (project eke WOW part eka)
+function drawComm() {
+  const box = $("#comm"); if (!box) return;
+  const key = place.name.toLowerCase();
+  const rs = reports.filter(r => r.cityLower && r.cityLower.length > 2 && (r.cityLower.includes(key) || key.includes(r.cityLower)));
+  let html = "";
+  const recent = rs.filter(r => r.createdAt && Date.now() - r.createdAt.toDate() < 6 * 3600e3);
+  if (recent.length && wxData) {
+    const tally = {}; recent.forEach(r => tally[r.condition] = (tally[r.condition] || 0) + 1);
+    const top = Object.keys(tally).sort((a, b) => tally[b] - tally[a])[0];
+    const fcat = wx(wxData.current.weather_code)[2], rcat = CAT[top] || top;
+    const diff = rcat !== "wind" && rcat !== fcat;
+    html += `<div class="banner ${diff ? "diff" : ""}"><b>${COND[top] || esc(top)}</b> · ${recent.length} report${recent.length > 1 ? "s" : ""} in the last 6 hours
+      <small>${diff ? "Locals see something different from the forecast." : "Matches the forecast."}</small></div>`;
+  }
+  html += rs.length ? rs.slice(0, 4).map(card).join("") : `<p class="empty">No reports for ${esc(place.name)} yet.</p>`;
+  html += `<a class="btn" href="#report" style="display:inline-block;text-decoration:none">${tr("add")}</a>`;
+  box.innerHTML = html;
+}
+
+// ---------- PAGE 2: Community ----------
+function community() {
+  $("#view").innerHTML = `<h1>${tr("comm_title")}</h1><p class="sub">${tr("comm_sub")}</p>
+    <input id="flt" type="search" placeholder="${tr("filter")}"><div id="feed" style="margin-top:12px"></div>`;
+  $("#flt").oninput = drawFeed; drawFeed();
+}
+function drawFeed() {
+  const box = $("#feed"); if (!box) return;
+  const t = $("#flt").value.trim().toLowerCase();
+  const list = reports.filter(r => !t || (r.cityLower || "").includes(t));
+  box.innerHTML = list.length ? list.map(card).join("") : '<p class="empty">No reports found. Be the first to post.</p>';
+}
+
+// ---------- PAGE 3: New report ----------
+function report() {
+  if (!user) { $("#view").innerHTML = `<h1>${tr("add_title")}</h1><p class="sub">Log in to post what you see outside.</p><a class="btn" href="#account" style="text-decoration:none;display:inline-block">Log in</a>`; return; }
+  $("#view").innerHTML = `<div class="panel"><h1>${tr("add_title")}</h1><p class="sub">Tell people what the weather is like where you are.</p>
+    <input id="rc" list="slc" placeholder="Your town or district" value="${esc(place.name)}"><datalist id="slc">${SL.map(x => `<option value="${x[0]}">`).join("")}</datalist>
+    <div class="chips">${Object.entries(COND).map(([k, v]) => `<label class="chip"><input type="radio" name="cond" value="${k}" ${k === "rain" ? "checked" : ""}><span>${v}</span></label>`).join("")}</div>
+    <input id="rt" type="number" placeholder="Temperature in °C (optional)">
+    <textarea id="rn" maxlength="200" placeholder="Anything to add? (max 200 characters)"></textarea>
+    <p class="sub" id="cnt">0 / 200</p><button class="btn" id="post">${tr("post")}</button></div>`;
+  $("#rn").oninput = () => $("#cnt").textContent = $("#rn").value.length + " / 200";
+  $("#post").onclick = async () => {
+    const city = $("#rc").value.trim(), t = $("#rt").value, f = SL.find(x => x[0].toLowerCase() === city.toLowerCase());
+    if (!city) return toast("Enter your town or district.");
+    try {
+      await addDoc(collection(db, "reports"), {
+        uid: user.uid, author: user.displayName || user.email.split("@")[0], city, cityLower: city.toLowerCase(), lat: f ? f[1] : null, lon: f ? f[2] : null, confirms: [],
+        condition: document.querySelector("input[name=cond]:checked").value,
+        temp: t === "" ? null : Number(t), note: $("#rn").value.trim(), createdAt: serverTimestamp()
+      });
+      toast("Report posted"); location.hash = "#community";
+    } catch (e) { toast("Could not post: " + (e.code || "error")); }
+  };
+}
+
+// ---------- PAGE 4: Account ----------
+const AUTH_ERR = { "auth/invalid-credential": "Wrong email or password.", "auth/email-already-in-use": "This email already has an account. Log in instead.", "auth/weak-password": "Password needs at least 6 characters.", "auth/invalid-email": "Enter a valid email address.", "auth/popup-closed-by-user": "Sign-in cancelled.", "auth/operation-not-allowed": "This sign-in method is not enabled in Firebase.", "auth/too-many-requests": "Too many attempts. Try again later.", "auth/missing-password": "Enter your password." };
+const hue = s => [...s].reduce((a, c) => a + c.charCodeAt(0), 0) % 360;
+
+const IC = {
+  user: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21a8.5 8.5 0 0 1 17 0z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m4.5 7.5 7.5 5.5 7.5-5.5" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="10.5" width="14" height="10.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>'
+};
+const GIC = '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7a14.5 14.5 0 0 1 0-9.4l-7.9-6.1a24 24 0 0 0 0 21.6l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+const fld = (id, type, ph, ic, ac) => `<label class="fld">${IC[ic]}<input id="${id}" type="${type}" placeholder="${ph}" autocomplete="${ac}"></label>`;
+const pwf = (id, ph, ac) => `<label class="fld">${IC.lock}<input id="${id}" type="password" placeholder="${ph}" autocomplete="${ac}"><button type="button" class="eye" data-for="${id}" aria-label="Show password">👁</button></label>`;
+
+function account() {
+  if (user) return profile();
+  const login = mode === "login";
+  $("#view").innerHTML = `<div class="auth"><img class="authlogo" src="logo.png" alt="LocalSky LK" width="128" height="128"><div class="glass">
+    <h1>${login ? tr("welcome") : tr("create")}</h1><p class="sub">${login ? tr("welcome_sub") : tr("create_sub")}</p>
+    ${login ? "" : fld("nm", "text", tr("name"), "user", "name")}
+    ${fld("em", "email", tr("email"), login ? "user" : "mail", "email")}
+    ${pwf("pw", tr("pass"), login ? "current-password" : "new-password")}
+    ${login ? "" : pwf("pw2", tr("confirm_pw"), "new-password") + '<div class="meter"><i id="mt"></i></div>'}
+    <button class="btn wide go" id="go">${login ? tr("login") : tr("signup")}</button>
+    <p class="or">${tr("or")}</p>
+    <button class="btn ghost wide" id="g">${GIC}${tr("google")}</button>
+    <div class="alt">${login ? `<a href="#account" id="fp">${tr("forgot")}</a><a href="#account" id="sw">${tr("no_acc")}</a>` : `<span>${tr("have_acc")} <a href="#account" id="sw">${tr("login")}</a></span>`}</div>
+  </div></div>`;
+  $("#sw").onclick = e => { e.preventDefault(); mode = login ? "signup" : "login"; account(); };
+  document.querySelectorAll(".eye").forEach(b => b.onclick = () => { const i = $("#" + b.dataset.for); i.type = i.type === "password" ? "text" : "password"; });
+  $("#pw").oninput = () => {
+    const v = $("#pw").value, sc = (v.length >= 8) + /[A-Z]/.test(v) + /\d/.test(v) + /[^A-Za-z0-9]/.test(v), m = $("#mt");
+    if (m) { m.style.width = sc * 25 + "%"; m.style.background = ["#d64545", "#d64545", "#e8912d", "#3fb7a4", "#2f9e6f"][sc]; }
+  };
+  $("#view").onkeydown = e => { if (e.key === "Enter" && $("#go")) $("#go").click(); };
+  $("#g").onclick = async () => { try { await signInWithPopup(auth, new GoogleAuthProvider()); location.hash = "#home"; } catch (e) { toast(AUTH_ERR[e.code] || "Google sign-in failed."); } };
+  if (login) $("#fp").onclick = async e => {
+    e.preventDefault(); const em = $("#em").value.trim(); if (!em) return toast("Enter your email first.");
+    try { await sendPasswordResetEmail(auth, em); toast("Password reset email sent."); } catch (err) { toast(AUTH_ERR[err.code] || "Could not send reset email."); }
+  };
+  $("#go").onclick = async () => {
+    try {
+      const em = $("#em").value.trim(), pv = $("#pw").value;
+      if (login) await signInWithEmailAndPassword(auth, em, pv);
+      else {
+        if (pv !== $("#pw2").value) return toast("Passwords do not match.");
+        const c = await createUserWithEmailAndPassword(auth, em, pv), nm = $("#nm").value.trim();
+        if (nm) await updateProfile(c.user, { displayName: nm });
+      }
+      toast(login ? "Welcome back" : "Account created"); location.hash = "#home";
+    } catch (e) { toast(AUTH_ERR[e.code] || "Something went wrong. Try again."); }
+  };
+}
+
+function profile() {
+  const nm = user.displayName || user.email.split("@")[0], mine = reports.filter(r => r.uid === user.uid);
+  const cf = mine.reduce((a, r) => a + (r.confirms || []).length, 0);
+  const badge = mine.length >= 10 ? "🌩️ Storm Chaser" : mine.length >= 3 ? "⛅ Local Reporter" : "🌱 Newcomer";
+  const since = new Date(user.metadata.creationTime).toLocaleDateString(lang, { month: "long", year: "numeric" });
+  $("#view").innerHTML = `<div class="phead"><i class="bigav" style="background:hsl(${hue(nm)} 55% 42%)">${esc(nm[0].toUpperCase())}</i>
+      <div><h1>${esc(nm)}</h1><p class="sub">${esc(user.email)} · ${tr("since")} ${since}</p></div></div>
+    <div class="pstats"><div><b>${mine.length}</b>${tr("reports")}</div><div><b>${cf}</b>${tr("confirms")}</div><div><b>${badge}</b>Level</div></div>
+    <h2>${tr("edit_name")}</h2><div class="search"><input id="dn" value="${esc(nm)}" maxlength="30"><button class="btn" id="sv">${tr("save")}</button></div>
+    <h2>${tr("mine")}</h2>${mine.length ? mine.map(card).join("") : `<p class="empty">${tr("none")}</p>`}
+    <button class="btn ghost" id="out" style="margin-top:12px">${tr("logout")}</button>`;
+  $("#out").onclick = () => signOut(auth);
+  $("#sv").onclick = async () => { const v = $("#dn").value.trim(); if (!v) return; try { await updateProfile(user, { displayName: v }); toast(tr("saved")); profile(); } catch (e) { toast("Could not save."); } };
+}
+
+// ---------- PAGE 5: Alert map (flood / landslide / storm) ----------
+let map, layer;
+const pos = r => { const f = SL.find(x => x[0].toLowerCase() === r.cityLower); return r.lat != null ? [r.lat, r.lon] : f ? [f[1], f[2]] : null; };
+function mapPage() {
+  $("#view").innerHTML = `<h1>${tr("map_title")}</h1><p class="sub">${tr("map_sub")}</p><div id="map"></div>`;
+  if (!window.L) { $("#map").innerHTML = '<p class="empty">Map could not load. Check your internet.</p>'; return; }
+  map = L.map("map").setView([7.8, 80.7], 7);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 12, attribution: "© OpenStreetMap" }).addTo(map);
+  layer = null; drawMap();
+}
+function drawMap() {
+  if (!$("#map") || !window.L || !map) return;
+  if (layer) layer.remove(); layer = L.layerGroup().addTo(map);
+  reports.filter(r => !r.createdAt || Date.now() - r.createdAt.toDate() < 864e5).forEach(r => {
+    const c = pos(r); if (!c) return;
+    const al = ["flood", "landslide", "storm"].includes(r.condition);
+    L.marker(c, { icon: L.divIcon({ className: "mk" + (al ? " al" : ""), html: (COND[r.condition] || "📍").split(" ")[0], iconSize: [36, 36] }) })
+      .bindPopup(`<b>${COND[r.condition] || ""}</b><br>${esc(r.city)}<br>${esc(r.note || "")}`).addTo(layer);
+  });
+}
+
+// ---------- router ----------
+const routes = { home, community, map: mapPage, report, account };
+function render() {
+  const r = routes[location.hash.slice(1)] ? location.hash.slice(1) : "home";
+  document.querySelectorAll("#links a").forEach(a => a.classList.toggle("on", a.dataset.r === r));
+  document.querySelectorAll("#links a").forEach(a => a.lastChild.textContent = tr(a.dataset.r));
+  routes[r](); window.scrollTo(0, 0);
+}
+addEventListener("hashchange", render);
+$("#lang").value = lang; document.documentElement.lang = lang;
+$("#lang").onchange = e => {
+  lang = e.target.value; ls("lang", lang);
+  Object.keys(COND).forEach(k => delete COND[k]); Object.assign(COND, CONDS[lang]);
+  document.documentElement.lang = lang; render();
+};
+
+// ---------- live data ----------
+onAuthStateChanged(auth, u => { user = u; render(); });
+onSnapshot(query(collection(db, "reports"), orderBy("createdAt", "desc"), limit(100)),
+  snap => { reports = snap.docs.map(d => ({ id: d.id, ...d.data() })); drawComm(); drawFeed(); drawMap(); if (user && location.hash === "#account") profile(); },
+  () => toast("Could not load reports."));
+
+document.addEventListener("click", async e => {
+  const del = e.target.closest("[data-del]"), cf = e.target.closest("[data-cf]");
+  try {
+    if (del) { await deleteDoc(doc(db, "reports", del.dataset.del)); toast("Deleted"); }
+    if (cf) {
+      if (!user) return toast("Log in to confirm reports.");
+      const r = reports.find(x => x.id === cf.dataset.cf), has = (r.confirms || []).includes(user.uid);
+      await updateDoc(doc(db, "reports", r.id), { confirms: has ? arrayRemove(user.uid) : arrayUnion(user.uid) });
+    }
+  } catch (err) { toast("Action failed. Check the Firestore rules."); }
+});
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
